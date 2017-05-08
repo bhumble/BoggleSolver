@@ -107,7 +107,7 @@ struct Rules
 };
 
 
-list<string> findWordsRecursive(const Matrix<char>& letterGrid, Rules& rules, size_t x, size_t y, Matrix<bool> visited, string letterChain, function<void(const char*)> foundWordCallback)
+list<string> findWordsRecursive(const Matrix<char>& letterGrid, Rules& rules, size_t x, size_t y, Matrix<bool>& visited, string& letterChain, function<void(const char*)> foundWordCallback)
 {
     list<string> words;
 
@@ -119,7 +119,6 @@ list<string> findWordsRecursive(const Matrix<char>& letterGrid, Rules& rules, si
 
     // Append char at position x,y to letterChain and see if it forms a word
     letterChain.push_back(letterGrid(x, y));
-    cout << x << "," << y << "," << letterChain << endl;
     if (letterChain.length() >= rules.minWordLength && rules.dictionary.contains(letterChain))
     {
         foundWordCallback(letterChain.c_str());
@@ -129,11 +128,12 @@ list<string> findWordsRecursive(const Matrix<char>& letterGrid, Rules& rules, si
     // Keep looking in adjacent cells
     if (letterChain.length() < rules.maxWordLength)
     {
-        for (ssize_t adjacentY = y - 1; adjacentY <= y + 1; ++adjacentY) // above, middle, below
+        for (int yMod = -1; yMod <= 1; ++yMod) // above, middle, below
         {
-            for (ssize_t adjacentX = x - 1; adjacentX <= x + 1; ++adjacentX) // left, middle, right
+            for (int xMod = -1; xMod <= 1; ++xMod) // left, middle, right
             {
-                cout << adjacentX << "," << adjacentY << endl;
+				ssize_t adjacentX = x + xMod;
+				ssize_t adjacentY = y + yMod;
                 if (adjacentX == x && adjacentY == y)
                 {
                     continue; // don't recurse on own position
@@ -154,6 +154,13 @@ list<string> findWordsRecursive(const Matrix<char>& letterGrid, Rules& rules, si
         }
     }
 
+    // Clear visited flag on exit so we can share the visited Matrix
+    if (!rules.allowReuse)
+    {
+        visited.set(x, y, false);
+    }
+    letterChain.pop_back(); // pop back of letterChain on exit so we can share it
+
     return words;
 }
 
@@ -165,6 +172,8 @@ list<string> findWords(const Matrix<char>& letterGrid, Rules& rules, function<vo
 
     list<string> words;
     string letterChain;
+
+    // iterate over every cell in letterGrid
     for (size_t y = 0; y < letterGrid.height(); ++y)
     {
         for (size_t x = 0; x < letterGrid.width(); ++x)
@@ -204,7 +213,7 @@ int main(int argc, const char* argv[])
 
     // Initialize boggle grid
     Matrix<char> letterGrid(5, 5);
-    vector<char> init = { 'f', 'h', 'n', 'm', 'w', 'l', 't', 'v', 'o', 'x', 'y', 'c', 'a', 'e', 'b', 'q', 's', 'i', 'r', 'g', 'p', 'u', 'd', 'z', 'k' };
+    vector<char> init = { 'f', 'h', 'n', 'm', 'w', 'l', 't', 'v', 'o', 'x', 'y', 'c', 'a', 'e', 'b', 'q', 's', 'i', 'r', 'g', 'p', 'u', 'd', 'z', 'k' }; // from Mensa puzzle calendar, May 5th, 2017 (7, 7-letter words)
     letterGrid.set(init);
 
     // Find words
